@@ -1,4 +1,5 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Query
+from typing import Literal
 
 app = FastAPI()
 
@@ -25,7 +26,10 @@ def summary():
     return {'summary': results}
 
 @app.get('/claims', summary='給付金の支払状況を検索')
-def get_claims(status: str, min_amount: int = 0):
+def get_claims(
+    status: Literal['支払済', '審査中', '不支払'],
+    min_amount: int = Query(default=0, ge=0)
+    ):
     conn = sqlite3.connect('kyufukin.db')
     cursor = conn.cursor()
 
