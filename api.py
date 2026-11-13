@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, Query, HTTPException
 from typing import Literal
 
 app = FastAPI()
@@ -30,28 +30,41 @@ def get_claims(
     status: Literal['支払済', '審査中', '不支払'],
     min_amount: int = Query(default=0, ge=0)
     ):
-    conn = sqlite3.connect('kyufukin.db')
-    cursor = conn.cursor()
-
-    cursor.execute(
-        '''
-        SELECT claim_id, claim_amount, status
-        FROM claims
-        WHERE status = ? AND claim_amount >= ?
-        ''',
-        (status, min_amount)
+    try:
+        conn = sqlite3.connect('kyufukin.db')
+        cursor = conn.cursor()
+    except sqlite3.Error:
+        raise HTTPException(
+            status_code=500,
+            detail='データベース接続エラー'
+        )
+    try:
+        cursor.execute(
+            '''SELECT claim_id, claim_amount, status
+            FROM claims
+            WHERE status = ? AND claim_amount >= ?
+            ''',
+            (status, min_amount)
     )
+    
+        results = cursor.fetchall()
 
-    results = cursor.fetchall()
-    conn.close()
+    except sqlite3.Error:
+        raise HTTPException(
+            status_code=500,
+            detail='データベース検索エラー'
+        )
 
-    claims = []
+    finally:
+        conn.close()
 
-    for row in results:
-        claims.append({
-            'claim_id': row[0],
-            'claim_amount': row[1],
-            'status': row[2]
-        })
+        claims = []
+
+        for row in results:
+            claims.append({
+                'claim_id': row[0],
+                'claim_amount': row[1],
+                'status': row[2]
+            })
 
     return {'claims': claims}
