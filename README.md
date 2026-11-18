@@ -70,9 +70,80 @@ pytestとFastAPIのTestClientを使用して、以下を検証。
 - 集計APIの正常動作
 - 検索APIの正常動作
 - 不正な金額に対する422エラー
+- 統計分析APIの正常動作
 
 実行コマンド：
 
 ```bash
 python3 -m pytest test_api.py -v
 ```
+
+## 統計分析API
+
+`GET /statistics`
+
+給付金請求データ全体を対象に、SQLで統計情報を集計するAPIです。
+
+### 取得できる情報
+
+- 全体の請求件数
+- 平均請求金額
+- 最大請求金額
+- 最小請求金額
+- 支払済件数の割合
+
+### 実行例
+
+```json
+{
+  "total_claims": 50,
+  "average_amount": 376660.0,
+  "max_amount": 2700000,
+  "min_amount": 5000,
+  "paid_rate": 0.78
+}
+```
+
+### 使用した技術
+
+- Python：APIの処理
+- SQLite：データの保存・SQLによる集計
+- FastAPI：統計情報を取得するAPIの提供
+
+### 工夫した点
+
+SQLの集計関数（COUNT、AVG、MAX、MIN、SUM）を使用し、
+複数の統計情報を1回のSQL実行で取得できるようにしました。
+
+また、請求データが0件の場合でも、
+ゼロ除算が発生しないように処理しています。
+
+## システム構成
+
+```text
+給付金サンプルデータ（CSV）
+          |
+          v
+     import_csv.py
+      CSV読み込み
+          |
+          v
+   SQLite（kyufukin.db）
+      データ保存
+          ^
+          | SQLによる検索・集計
+          v
+    api.py（FastAPI）
+          ^
+          | HTTPリクエスト・レスポンス
+          v
+  ブラウザ（Swagger UI）
+```
+
+### データ処理の流れ
+
+1. CSVファイルから給付金請求データを読み込む
+2. PythonでSQLiteデータベースに保存する
+3. FastAPIからSQLを実行して検索・集計する
+4. 集計結果をJSON形式で返す
+5. ブラウザからAPIの動作を確認する
