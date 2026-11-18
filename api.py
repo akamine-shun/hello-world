@@ -68,3 +68,29 @@ def get_claims(
             })
 
     return {'claims': claims}
+
+@app.get('/statistics', summary='給付金のデータの統計分析')
+def get_statistics():
+    conn = sqlite3.connect('kyufukin.db')
+    cursor = conn.cursor()
+
+    cursor.execute('''
+        SELECT
+            COUNT(*),
+            AVG(claim_amount),
+            MAX(claim_amount),
+            MIN(claim_amount),
+            SUM(CASE WHEN status = '支払済' THEN 1 ELSE 0 END)
+        FROM claims
+    ''')
+
+    result = cursor.fetchone()
+    conn.close()
+
+    return {
+        'total_claims': result[0],
+        'average_amount': result[1],
+        'max_amount': result[2],
+        'min_amount': result[3],
+        'paid_rate': result[4] / result[0] if result[0] > 0 else 0
+    }

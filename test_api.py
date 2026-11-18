@@ -32,3 +32,15 @@ def test_invalid_amount():
     )
 
     assert response.status_code == 422
+
+def test_statistics():
+    response = client.get('/statistics')
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert data['total_claims'] == 50
+    assert data['average_amount'] >= 0
+    assert data['max_amount'] >= data['min_amount']
+    assert 0 <= data['paid_rate'] <= 1
