@@ -1,3 +1,6 @@
+import sqlite3
+from unittest.mock import patch
+
 from fastapi.testclient import TestClient
 from api import app
 
@@ -44,3 +47,36 @@ def test_statistics():
     assert data['average_amount'] >= 0
     assert data['max_amount'] >= data['min_amount']
     assert 0 <= data['paid_rate'] <= 1
+
+def test_statistics_db_error():
+    with patch(
+        'api.sqlite3.connect',
+        side_effect=sqlite3.OperationalError('接続失敗')
+    ):
+        response = client.get('/statistics')
+
+    assert response.status_code == 500
+    assert response.json()['detail'] == 'データベース集計エラー'
+
+def test_summary_db_error():
+    with patch(
+        'api.sqlite3.connect',
+        side_effect=sqlite3.OperationalError('接続失敗')
+    ):
+        response = client.get('/summary')
+
+    assert response.status_code == 500
+    assert response.json()['detail'] == 'データベース集計エラー'
+
+def test_claims_db_error():
+    with patch(
+        'api.sqlite3.connect',
+        side_effect=sqlite3.OperationalError('接続失敗')
+    ):
+        response = client.get(
+            '/claims',
+            params={'status': '支払済', 'min_amount': 0}
+        )
+
+    assert response.status_code == 500
+    assert response.json()['detail'] == 'データベース接続エラー'
