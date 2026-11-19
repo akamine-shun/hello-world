@@ -11,17 +11,29 @@ import sqlite3
 
 @app.get('/summary', summary='給付金の支払状況を集計')
 def summary():
-    conn = sqlite3.connect('kyufukin.db')
-    cursor = conn.cursor()
+    conn = None
 
-    cursor.execute('''
-        SELECT status, COUNT(*), SUM(claim_amount)
-        FROM claims
-        GROUP BY status
+    try:
+        conn = sqlite3.connect('kyufukin.db')
+        cursor = conn.cursor()
+
+        cursor.execute('''
+            SELECT status, COUNT(*), SUM(claim_amount)
+            FROM claims
+            GROUP BY status
         ''')
 
-    results = cursor.fetchall()
-    conn.close()
+        results = cursor.fetchall()
+
+    except sqlite3.Error:
+        raise HTTPException(
+            status_code=500,
+            detail='データベース集計エラー'
+        )
+
+    finally:
+        if conn is not None:
+            conn.close()
 
     return {'summary': results}
 
@@ -71,21 +83,33 @@ def get_claims(
 
 @app.get('/statistics', summary='給付金のデータの統計分析')
 def get_statistics():
-    conn = sqlite3.connect('kyufukin.db')
-    cursor = conn.cursor()
+    conn = None
 
-    cursor.execute('''
-        SELECT
-            COUNT(*),
-            AVG(claim_amount),
-            MAX(claim_amount),
-            MIN(claim_amount),
-            SUM(CASE WHEN status = '支払済' THEN 1 ELSE 0 END)
-        FROM claims
-    ''')
+    try:
+        conn = sqlite3.connect('kyufukin.db')
+        cursor = conn.cursor()
 
-    result = cursor.fetchone()
-    conn.close()
+        cursor.execute('''
+            SELECT
+                COUNT(*),
+                AVG(claim_amount),
+                MAX(claim_amount),
+                MIN(claim_amount),
+                SUM(CASE WHEN status = '支払済' THEN 1 ELSE 0 END)
+            FROM claims
+        ''')
+
+        result = cursor.fetchone()
+
+    except sqlite3.Error:
+        raise HTTPException(
+            status_code=500,
+            detail='データベース集計エラー'
+        )
+
+    finally:
+        if conn is not None:
+            conn.close()
 
     return {
         'total_claims': result[0],
