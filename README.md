@@ -34,11 +34,22 @@ PythonとSQLiteを使用して、給付金データの取り込み・保存・�
 ## 実行方法
 Python 3が必要です。
 
+### 必要なライブラリのインストール
+
+以下のコマンドで必要なライブラリをインストールします。
+
+```bash
+python3 -m pip install fastapi uvicorn pytest httpx
+```
+
+### データ処理の実行
+
 以下のコマンドで実行します。
 
 ```bash
 python3 main.py
 ```
+
 ### APIの起動方法
 
 以下のコマンドでAPIを起動します。
