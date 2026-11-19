@@ -39,7 +39,7 @@ Python 3が必要です。
 以下のコマンドで必要なライブラリをインストールします。
 
 ```bash
-python3 -m pip install fastapi uvicorn pytest httpx
+python3 -m pip install -r requirements.txt
 ```
 
 ### データ処理の実行
