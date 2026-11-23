@@ -80,3 +80,30 @@ def test_claims_db_error():
 
     assert response.status_code == 500
     assert response.json()['detail'] == 'データベース接続エラー'
+
+def test_errors():
+    response = client.get(
+        '/errors',
+        params={'claim_type': '入院給付金'}
+    )
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert 'errors' in data
+    assert len(data['errors']) >= 1
+    assert data['errors'][0]['claim_type'] == '入院給付金'
+
+def test_errors_db_error():
+    with patch(
+        'api.sqlite3.connect',
+        side_effect=sqlite3.OperationalError('接続失敗')
+    ):
+        response = client.get(
+            '/errors',
+            params={'claim_type': '入院給付金'}
+        )
+
+    assert response.status_code == 500
+    assert response.json()['detail'] == '査定誤り事例の検索エラー'

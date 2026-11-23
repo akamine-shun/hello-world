@@ -118,3 +118,41 @@ def get_statistics():
         'min_amount': result[3],
         'paid_rate': result[4] / result[0] if result[0] > 0 else 0
     }
+
+@app.get('/errors', summary='査定誤り事例を検索')
+def get_errors(claim_type: str):
+    conn = None
+
+    try:
+        conn = sqlite3.connect('kyufukin.db')
+        cursor = conn.cursor()
+
+        cursor.execute('''
+            SELECT claim_id, claim_type, error_detail, correct_action
+            FROM assessment_errors
+            WHERE claim_type = ?
+        ''', (claim_type,))
+
+        results = cursor.fetchall()
+
+    except sqlite3.Error:
+        raise HTTPException(
+            status_code=500,
+            detail='査定誤り事例の検索エラー'
+        )
+
+    finally:
+        if conn is not None:
+            conn.close()
+
+    errors = []
+
+    for row in results:
+        errors.append({
+            'claim_id': row[0],
+            'claim_type': row[1],
+            'error_detail': row[2],
+            'correct_action': row[3]
+        })
+
+    return {'errors': errors}
