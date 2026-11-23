@@ -8,7 +8,7 @@ INSERT INTO assessment_errors
 (claim_id, claim_type, error_detail, correct_action)
 VALUES (?, ?, ?, ?)
 ''',(
-    'A001',
+    'C001',
     '入院給付金',
     '入院日数の計算誤り',
     '支払対象日数を再確認する'

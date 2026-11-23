@@ -232,7 +232,7 @@ python3 insert_errors.py
 {
   "errors": [
     {
-      "claim_id": "A001",
+      "claim_id": "C001",
       "claim_type": "入院給付金",
       "error_detail": "入院日数の計算誤り",
       "correct_action": "支払対象日数を再確認する"
