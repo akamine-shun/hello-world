@@ -1,13 +1,23 @@
-from fastapi import FastAPI, Query, HTTPException
+import sqlite3
 from typing import Literal
 
+from fastapi import FastAPI, Query, HTTPException
+from pydantic import BaseModel
+
 app = FastAPI()
+
+
+class AssessmentError(BaseModel):
+    claim_id: str
+    claim_type: str
+    error_detail: str
+    correct_action: str
+
 
 @app.get('/')
 def home():
     return {'message': '給付金データ分析API'}
 
-import sqlite3
 
 @app.get('/summary', summary='給付金の支払状況を集計')
 def summary():
@@ -36,6 +46,7 @@ def summary():
             conn.close()
 
     return {'summary': results}
+
 
 @app.get('/claims', summary='給付金の支払状況を検索')
 def get_claims(
@@ -81,6 +92,7 @@ def get_claims(
 
     return {'claims': claims}
 
+
 @app.get('/statistics', summary='給付金のデータの統計分析')
 def get_statistics():
     conn = None
@@ -119,6 +131,7 @@ def get_statistics():
         'paid_rate': result[4] / result[0] if result[0] > 0 else 0
     }
 
+
 @app.get('/errors', summary='査定誤り事例を検索')
 def get_errors(claim_type: str):
     conn = None
@@ -156,3 +169,48 @@ def get_errors(claim_type: str):
         })
 
     return {'errors': errors}
+
+
+@app.post('/errors', summary='査定誤り事例を登録', status_code=201)
+def create_error(error: AssessmentError):
+    conn = None
+
+    try:
+        conn = sqlite3.connect('kyufukin.db')
+        cursor = conn.cursor()
+
+        cursor.execute(
+            'SELECT claim_id FROM claims WHERE claim_id = ?',
+            (error.claim_id,)
+        )
+
+        if cursor.fetchone() is None:
+            raise HTTPException(
+                status_code=404,
+                detail='案件番号が存在しません'
+            )
+
+        cursor.execute('''
+            INSERT INTO assessment_errors
+            (claim_id, claim_type, error_detail, correct_action)
+            VALUES (?, ?, ?, ?)
+        ''', (
+            error.claim_id,
+            error.claim_type,
+            error.error_detail,
+            error.correct_action
+        ))
+
+        conn.commit()
+
+    except sqlite3.Error:
+        raise HTTPException(
+            status_code=500,
+            detail='査定誤りの事例の登録エラー'
+        )
+
+    finally:
+        if conn is not None:
+            conn.close()
+
+    return {'message': '査定誤りの事例を登録しました'}
