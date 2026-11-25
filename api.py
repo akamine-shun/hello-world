@@ -214,3 +214,51 @@ def create_error(error: AssessmentError):
             conn.close()
 
     return {'message': '査定誤りの事例を登録しました'}
+
+
+@app.get('/errors/details', summary='査定誤り事例と給付金情報を取得')
+def get_error_details():
+    conn = None
+
+    try:
+        conn = sqlite3.connect('kyufukin.db')
+        cursor = conn.cursor()
+
+        cursor.execute('''
+            SELECT
+                c.claim_id,
+                c.claim_amount,
+                c.status,
+                e.claim_type,
+                e.error_detail,
+                e.correct_action
+            FROM claims AS c
+            INNER JOIN assessment_errors AS e
+                ON c.claim_id = e.claim_id
+        ''')
+
+        results = cursor.fetchall()
+
+    except sqlite3.Error:
+        raise HTTPException(
+            status_code=500,
+            detail='査定誤り詳細情報の取得エラー'
+        )
+
+    finally:
+        if conn is not None:
+            conn.close()
+
+    details = []
+
+    for row in results:
+        details.append({
+            'claim_id': row[0],
+            'claim_amount': row[1],
+            'status': row[2],
+            'claim_type': row[3],
+            'error_detail': row[4],
+            'correct_action': row[5]
+        })
+
+    return {'details': details}

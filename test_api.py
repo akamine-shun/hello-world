@@ -190,3 +190,34 @@ def test_create_error_db_error():
 
     assert response.status_code == 500
     assert response.json()['detail'] == '査定誤りの事例の登録エラー'
+
+
+def test_error_details():
+    response = client.get('/errors/details')
+
+    assert response.status_code == 200
+
+    data = response.json()
+
+    assert 'details' in data
+    assert len(data['details']) >= 1
+
+    detail = data['details'][0]
+
+    assert 'claim_id' in detail
+    assert 'claim_amount' in detail
+    assert 'status' in detail
+    assert 'claim_type' in detail
+    assert 'error_detail' in detail
+    assert 'correct_action' in detail
+
+
+def test_error_details_db_error():
+    with patch(
+        'api.sqlite3.connect',
+        side_effect=sqlite3.OperationalError('接続失敗')
+    ):
+        response = client.get('/errors/details')
+
+    assert response.status_code == 500
+    assert response.json()['detail'] == '査定誤り詳細情報の取得エラー'
