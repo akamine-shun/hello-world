@@ -1,17 +1,26 @@
 import sqlite3
 
-conn = sqlite3.connect('kyufukin.db')
-cursor = conn.cursor()
+conn = None
 
-cursor.execute('''
-SELECT status, COUNT(*), SUM(claim_amount)
-FROM claims
-GROUP BY status
-''')
+try:
+    conn = sqlite3.connect('kyufukin.db')
+    cursor = conn.cursor()
 
-results = cursor.fetchall()
+    cursor.execute('''
+        SELECT status, COUNT(*), SUM(claim_amount)
+        FROM claims
+        GROUP BY status
+    ''')
 
-for row in results:
-    print(row)
+    results = cursor.fetchall()
 
-conn.close()
+    for row in results:
+        print(row)
+
+except sqlite3.Error as e:
+    print('給付金データの集計エラー:', e)
+    raise
+
+finally:
+    if conn is not None:
+        conn.close()

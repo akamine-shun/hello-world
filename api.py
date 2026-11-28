@@ -25,6 +25,7 @@ def summary():
 
     try:
         conn = sqlite3.connect('kyufukin.db')
+        conn.execute('PRAGMA foreign_keys = ON')
         cursor = conn.cursor()
 
         cursor.execute('''
@@ -52,43 +53,47 @@ def summary():
 def get_claims(
     status: Literal['支払済', '審査中', '不支払'],
     min_amount: int = Query(default=0, ge=0)
-    ):
+):
+    conn = None
+
     try:
         conn = sqlite3.connect('kyufukin.db')
+        conn.execute('PRAGMA foreign_keys = ON')
         cursor = conn.cursor()
+
+        try:
+            cursor.execute('''
+                SELECT claim_id, claim_amount, status
+                FROM claims
+                WHERE status = ? AND claim_amount >= ?
+            ''', (status, min_amount))
+
+            results = cursor.fetchall()
+
+        except sqlite3.Error:
+            raise HTTPException(
+                status_code=500,
+                detail='データベース検索エラー'
+            )
+
     except sqlite3.Error:
         raise HTTPException(
             status_code=500,
             detail='データベース接続エラー'
         )
-    try:
-        cursor.execute(
-            '''SELECT claim_id, claim_amount, status
-            FROM claims
-            WHERE status = ? AND claim_amount >= ?
-            ''',
-            (status, min_amount)
-    )
-    
-        results = cursor.fetchall()
-
-    except sqlite3.Error:
-        raise HTTPException(
-            status_code=500,
-            detail='データベース検索エラー'
-        )
 
     finally:
-        conn.close()
+        if conn is not None:
+            conn.close()
 
-        claims = []
+    claims = []
 
-        for row in results:
-            claims.append({
-                'claim_id': row[0],
-                'claim_amount': row[1],
-                'status': row[2]
-            })
+    for row in results:
+        claims.append({
+            'claim_id': row[0],
+            'claim_amount': row[1],
+            'status': row[2]
+        })
 
     return {'claims': claims}
 
@@ -99,6 +104,7 @@ def get_statistics():
 
     try:
         conn = sqlite3.connect('kyufukin.db')
+        conn.execute('PRAGMA foreign_keys = ON')
         cursor = conn.cursor()
 
         cursor.execute('''
@@ -138,6 +144,7 @@ def get_errors(claim_type: str):
 
     try:
         conn = sqlite3.connect('kyufukin.db')
+        conn.execute('PRAGMA foreign_keys = ON')
         cursor = conn.cursor()
 
         cursor.execute('''
@@ -177,6 +184,7 @@ def create_error(error: AssessmentError):
 
     try:
         conn = sqlite3.connect('kyufukin.db')
+        conn.execute('PRAGMA foreign_keys = ON')
         cursor = conn.cursor()
 
         cursor.execute(
@@ -222,6 +230,7 @@ def get_error_details():
 
     try:
         conn = sqlite3.connect('kyufukin.db')
+        conn.execute('PRAGMA foreign_keys = ON')
         cursor = conn.cursor()
 
         cursor.execute('''
